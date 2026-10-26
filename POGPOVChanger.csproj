@@ -17,42 +17,43 @@
     <MelonLoaderDir Condition="'$(MelonLoaderDir)' == '' and '$(GameDir)' != ''">$(GameDir)\MelonLoader\net6</MelonLoaderDir>
     <GameAssembliesDir Condition="'$(GameAssembliesDir)' == ''">$(MelonLoaderDir)\..\Il2CppAssemblies</GameAssembliesDir>
     <POGConfigDir Condition="'$(POGConfigDir)' == ''">$(APPDATA)\com.kesomannen.gale\cache\Largo-POG_Config\1.0.10\Mods</POGConfigDir>
+    <UseBuildStubs Condition="'$(CI)' == 'true' or '$(MelonLoaderDir)' == '' or !Exists('$(MelonLoaderDir)\MelonLoader.dll') or !Exists('$(GameAssembliesDir)\Assembly-CSharp.dll')">true</UseBuildStubs>
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="MelonLoader" Condition="Exists('$(MelonLoaderDir)\MelonLoader.dll')">
+    <Reference Include="MelonLoader" Condition="'$(UseBuildStubs)' != 'true' and Exists('$(MelonLoaderDir)\MelonLoader.dll')">
       <HintPath>$(MelonLoaderDir)\MelonLoader.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="0Harmony" Condition="Exists('$(MelonLoaderDir)\0Harmony.dll')">
+    <Reference Include="0Harmony" Condition="'$(UseBuildStubs)' != 'true' and Exists('$(MelonLoaderDir)\0Harmony.dll')">
       <HintPath>$(MelonLoaderDir)\0Harmony.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="Il2CppInterop.Runtime" Condition="Exists('$(MelonLoaderDir)\Il2CppInterop.Runtime.dll')">
+    <Reference Include="Il2CppInterop.Runtime" Condition="'$(UseBuildStubs)' != 'true' and Exists('$(MelonLoaderDir)\Il2CppInterop.Runtime.dll')">
       <HintPath>$(MelonLoaderDir)\Il2CppInterop.Runtime.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="POGConfig" Condition="Exists('$(POGConfigDir)\POGConfig.dll')">
+    <Reference Include="POGConfig" Condition="'$(UseBuildStubs)' != 'true' and Exists('$(POGConfigDir)\POGConfig.dll')">
       <HintPath>$(POGConfigDir)\POGConfig.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="Assembly-CSharp" Condition="Exists('$(GameAssembliesDir)\Assembly-CSharp.dll')">
+    <Reference Include="Assembly-CSharp" Condition="'$(UseBuildStubs)' != 'true' and Exists('$(GameAssembliesDir)\Assembly-CSharp.dll')">
       <HintPath>$(GameAssembliesDir)\Assembly-CSharp.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="Il2Cppmscorlib" Condition="Exists('$(GameAssembliesDir)\Il2Cppmscorlib.dll')">
+    <Reference Include="Il2Cppmscorlib" Condition="'$(UseBuildStubs)' != 'true' and Exists('$(GameAssembliesDir)\Il2Cppmscorlib.dll')">
       <HintPath>$(GameAssembliesDir)\Il2Cppmscorlib.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="Unity.Netcode.Runtime" Condition="Exists('$(GameAssembliesDir)\Unity.Netcode.Runtime.dll')">
+    <Reference Include="Unity.Netcode.Runtime" Condition="'$(UseBuildStubs)' != 'true' and Exists('$(GameAssembliesDir)\Unity.Netcode.Runtime.dll')">
       <HintPath>$(GameAssembliesDir)\Unity.Netcode.Runtime.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="UnityEngine.CoreModule" Condition="Exists('$(GameAssembliesDir)\UnityEngine.CoreModule.dll')">
+    <Reference Include="UnityEngine.CoreModule" Condition="'$(UseBuildStubs)' != 'true' and Exists('$(GameAssembliesDir)\UnityEngine.CoreModule.dll')">
       <HintPath>$(GameAssembliesDir)\UnityEngine.CoreModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="UnityEngine.InputLegacyModule" Condition="Exists('$(GameAssembliesDir)\UnityEngine.InputLegacyModule.dll')">
+    <Reference Include="UnityEngine.InputLegacyModule" Condition="'$(UseBuildStubs)' != 'true' and Exists('$(GameAssembliesDir)\UnityEngine.InputLegacyModule.dll')">
       <HintPath>$(GameAssembliesDir)\UnityEngine.InputLegacyModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
@@ -60,6 +61,8 @@
 
   <ItemGroup>
     <Compile Include="$(BuildVersionMetadata)" />
+    <Compile Remove="BuildStubs\**\*.cs" />
+    <Compile Include="BuildStubs\ModStubs.cs" Condition="'$(UseBuildStubs)' == 'true'" />
   </ItemGroup>
 
   <Target Name="ApplyModVersion" BeforeTargets="PrepareForBuild" Condition="'$(DesignTimeBuild)' != 'true'">
@@ -100,7 +103,7 @@
       <_ManifestLine Include="  &quot;version_number&quot;: &quot;$(Version)&quot;," />
       <_ManifestLine Include="  &quot;website_url&quot;: &quot;https://github.com/GlitchApotamus/POG-POV-Changer.git&quot;," />
       <_ManifestLine Include="  &quot;description&quot;: &quot;Allows the player to switch between 1st and 3rd person POV&quot;," />
-      <_ManifestLine Include="  &quot;dependencies&quot;: [&quot;MelonLoader-0.7.3&quot;]" />
+      <_ManifestLine Include="  &quot;dependencies&quot;: [&quot;LavaGang-MelonLoader-0.7.3&quot;, &quot;Largo-POG_Config-1.0.10&quot;]" />
       <_ManifestLine Include="}" />
     </ItemGroup>
     <WriteLinesToFile File="$(MSBuildProjectDirectory)\manifest.json" Lines="@(_ManifestLine)" Overwrite="true" />
@@ -118,7 +121,7 @@
     <Message Importance="high" Text="Mod package created: $(_PackageZip)" />
   </Target>
 
-  <Target Name="ValidateMelonLoaderReferences" BeforeTargets="ResolveAssemblyReferences">
+  <Target Name="ValidateMelonLoaderReferences" BeforeTargets="ResolveAssemblyReferences" Condition="'$(UseBuildStubs)' != 'true'">
     <Error Condition="!Exists('$(MelonLoaderDir)\MelonLoader.dll') Or !Exists('$(MelonLoaderDir)\0Harmony.dll') Or !Exists('$(MelonLoaderDir)\Il2CppInterop.Runtime.dll')" Text="MelonLoader references were not found in '$(MelonLoaderDir)'. Install MelonLoader for Pit of Goblin or pass -p:MelonLoaderDir to the net6 folder." />
   </Target>
 </Project>
