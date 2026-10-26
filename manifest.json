@@ -1,8 +1,11 @@
 {
-"name": "POGPOVChanger",
-"author": "GlitchApotamus",
-"version_number": "0.0.2-20261026T161221Z",
-"website_url": "https://github.com/GlitchApotamus/POG-POV-Changer.git",
-"description": "Allows the player to switch between 1st and 3rd person POV",
-"dependencies": ["MelonLoader-0.7.3"]
+    "name": "POGPOVChanger",
+    "author": "GlitchApotamus",
+    "version_number": "0.0.1",
+    "website_url": "https://github.com/GlitchApotamus/POG-POV-Changer.git",
+    "description": "Allows the player to switch between 1st and 3rd person POV",
+    "dependencies": [
+        "MelonLoader-0.7.3",
+        "Largo-POG_Config-1.0.10"
+    ]
 }
