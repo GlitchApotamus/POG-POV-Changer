@@ -11,3 +11,7 @@ The mod defaults to the F5 key. If POG Config is installed, a custom POV toggle 
 - Project: POG-POV-Changer
 - Author: GlitchApotamus
 
+## WARNING
+
+Use this mod at your own risk! There are no animations and you can't interact with anything while in 3rd person! You can change back to 1st person to get everything working again.
+Everything will be fixed after version 1.0 POG!
