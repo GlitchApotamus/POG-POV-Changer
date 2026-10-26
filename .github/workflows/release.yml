@@ -1,0 +1,65 @@
+name: Release Mod Package
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: Git tag to attach the release to
+        required: false
+        default: ""
+  push:
+    tags:
+      - "v*"
+      - "*.*.*"
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 6.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build release package
+        run: dotnet build -c Release --no-restore --nologo
+
+      - name: Find generated mod zip
+        id: artifact
+        shell: bash
+        run: |
+          zip_path=$(find ./bin/Release -name "POGPOVChanger-*.zip" | head -n 1)
+          if [ -z "$zip_path" ]; then
+            echo "No release zip was produced by the build."
+            exit 1
+          fi
+          echo "zip_path=$zip_path" >> "$GITHUB_OUTPUT"
+          echo "file_name=$(basename "$zip_path")" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve release tag
+        id: release_tag
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.tag_name }}" ]; then
+            echo "tag=${{ github.event.inputs.tag_name }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=release-${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.release_tag.outputs.tag }}
+          files: ${{ steps.artifact.outputs.zip_path }}
+          generate_release_notes: true
