@@ -12,8 +12,11 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
-    <GameDir Condition="'$(GameDir)' == ''">C:\Program Files (x86)\Steam\steamapps\common\Pit of Goblin</GameDir>
-    <MelonLoaderDir Condition="'$(MelonLoaderDir)' == ''">C:\Program Files (x86)\Steam\steamapps\common\Pit of Goblin\MelonLoader\net6</MelonLoaderDir>
+    <GameDir Condition="'$(GameDir)' == ''">$(PIT_OF_GOBLINS_GAME_DIR)</GameDir>
+    <MelonLoaderDir Condition="'$(MelonLoaderDir)' == '' and Exists('$(APPDATA)\com.kesomannen.gale\pit-of-goblin\profiles\Default\MelonLoader\net6\MelonLoader.dll')">$(APPDATA)\com.kesomannen.gale\pit-of-goblin\profiles\Default\MelonLoader\net6</MelonLoaderDir>
+    <MelonLoaderDir Condition="'$(MelonLoaderDir)' == '' and '$(GameDir)' != ''">$(GameDir)\MelonLoader\net6</MelonLoaderDir>
+    <GameAssembliesDir Condition="'$(GameAssembliesDir)' == ''">$(MelonLoaderDir)\..\Il2CppAssemblies</GameAssembliesDir>
+    <POGConfigDir Condition="'$(POGConfigDir)' == ''">$(APPDATA)\com.kesomannen.gale\cache\Largo-POG_Config\1.0.10\Mods</POGConfigDir>
   </PropertyGroup>
 
   <ItemGroup>
@@ -27,6 +30,30 @@
     </Reference>
     <Reference Include="Il2CppInterop.Runtime" Condition="Exists('$(MelonLoaderDir)\Il2CppInterop.Runtime.dll')">
       <HintPath>$(MelonLoaderDir)\Il2CppInterop.Runtime.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="POGConfig" Condition="Exists('$(POGConfigDir)\POGConfig.dll')">
+      <HintPath>$(POGConfigDir)\POGConfig.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Assembly-CSharp" Condition="Exists('$(GameAssembliesDir)\Assembly-CSharp.dll')">
+      <HintPath>$(GameAssembliesDir)\Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2Cppmscorlib" Condition="Exists('$(GameAssembliesDir)\Il2Cppmscorlib.dll')">
+      <HintPath>$(GameAssembliesDir)\Il2Cppmscorlib.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Unity.Netcode.Runtime" Condition="Exists('$(GameAssembliesDir)\Unity.Netcode.Runtime.dll')">
+      <HintPath>$(GameAssembliesDir)\Unity.Netcode.Runtime.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule" Condition="Exists('$(GameAssembliesDir)\UnityEngine.CoreModule.dll')">
+      <HintPath>$(GameAssembliesDir)\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.InputLegacyModule" Condition="Exists('$(GameAssembliesDir)\UnityEngine.InputLegacyModule.dll')">
+      <HintPath>$(GameAssembliesDir)\UnityEngine.InputLegacyModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
   </ItemGroup>

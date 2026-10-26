@@ -1,17 +1,13 @@
 # POGPOVChanger
 
-A Pit of Goblin mod created by the PitOfGoblinModCreator tool.
+A Pit of Goblin mod that lets players toggle between first-person and third-person camera views.
 
-## Build
+## Default keybind
 
-```powershell
-dotnet build -c Debug
-dotnet build -c Release
-```
+The mod defaults to the F5 key. If POG Config is installed, a custom POV toggle key can be assigned from the in-game config menu.
 
 ## Mod details
 
-- Project: POGPOVChanger
+- Project: POG-POV-Changer
 - Author: GlitchApotamus
-- Version: 0.0.1
-- Description: Allows the player to switch between 1st and 3rd person POV
+
