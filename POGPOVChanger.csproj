@@ -1,0 +1,97 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <AssemblyName>POGPOVChanger</AssemblyName>
+    <RootNamespace>POGPOVChanger</RootNamespace>
+    <AssemblyTitle>POGPOVChanger</AssemblyTitle>
+    <Product>POGPOVChanger</Product>
+    <Company>GlitchApotamus</Company>
+    <Authors>GlitchApotamus</Authors>
+    <BuildVersionSource>$(MSBuildProjectDirectory)\VERSION</BuildVersionSource>
+    <BuildVersionMetadata>$(BaseIntermediateOutputPath)$(Configuration)\$(TargetFramework)\$(AssemblyName).BuildVersion.g.cs</BuildVersionMetadata>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <GameDir Condition="'$(GameDir)' == ''">C:\Program Files (x86)\Steam\steamapps\common\Pit of Goblin</GameDir>
+    <MelonLoaderDir Condition="'$(MelonLoaderDir)' == ''">C:\Program Files (x86)\Steam\steamapps\common\Pit of Goblin\MelonLoader\net6</MelonLoaderDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="MelonLoader" Condition="Exists('$(MelonLoaderDir)\MelonLoader.dll')">
+      <HintPath>$(MelonLoaderDir)\MelonLoader.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="0Harmony" Condition="Exists('$(MelonLoaderDir)\0Harmony.dll')">
+      <HintPath>$(MelonLoaderDir)\0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppInterop.Runtime" Condition="Exists('$(MelonLoaderDir)\Il2CppInterop.Runtime.dll')">
+      <HintPath>$(MelonLoaderDir)\Il2CppInterop.Runtime.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(BuildVersionMetadata)" />
+  </ItemGroup>
+
+  <Target Name="ApplyModVersion" BeforeTargets="PrepareForBuild" Condition="'$(DesignTimeBuild)' != 'true'">
+    <ReadLinesFromFile File="$(BuildVersionSource)">
+      <Output TaskParameter="Lines" ItemName="_CurrentVersionLine" />
+    </ReadLinesFromFile>
+    <PropertyGroup>
+      <_CurrentVersion>@(_CurrentVersionLine)</_CurrentVersion>
+      <_CurrentVersionTrimmed>$([System.String]::Copy('$(_CurrentVersion)').Trim())</_CurrentVersionTrimmed>
+      <_VersionMajor>$([System.Version]::Parse('$(_CurrentVersionTrimmed)').Major)</_VersionMajor>
+      <_VersionMinor>$([System.Version]::Parse('$(_CurrentVersionTrimmed)').Minor)</_VersionMinor>
+      <_VersionPatch>$([System.Version]::Parse('$(_CurrentVersionTrimmed)').Build)</_VersionPatch>
+      <_NextPatch>$([MSBuild]::Add($(_VersionPatch), 1))</_NextPatch>
+      <_ReleaseVersion>$(_VersionMajor).$(_VersionMinor).$(_NextPatch)</_ReleaseVersion>
+      <_Timestamp>$([System.DateTime]::UtcNow.ToString('yyyyMMddTHHmmssZ'))</_Timestamp>
+      <_DebugVersion>$(_VersionMajor).$(_VersionMinor).$(_NextPatch)-$(_Timestamp)</_DebugVersion>
+      <Version Condition="'$(Configuration)' == 'Release'">$(_CurrentVersionTrimmed)</Version>
+      <Version Condition="'$(Configuration)' == 'Debug'">$(_DebugVersion)</Version>
+      <AssemblyVersion>$(_VersionMajor).$(_VersionMinor).$(_NextPatch).0</AssemblyVersion>
+      <FileVersion>$(_CurrentVersionTrimmed)</FileVersion>
+      <InformationalVersion>$(Version)</InformationalVersion>
+      <PackageVersion>$(Version)</PackageVersion>
+    </PropertyGroup>
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('$(BuildVersionMetadata)'))" />
+    <ItemGroup>
+      <_BuildVersionSourceLine Include="using MelonLoader%3B" />
+      <_BuildVersionSourceLine Include="[assembly: MelonInfo(typeof(POGPOVChanger.POGPOVChanger), &quot;POGPOVChanger&quot;, &quot;$(Version)&quot;, &quot;GlitchApotamus&quot;)]" />
+    </ItemGroup>
+    <WriteLinesToFile File="$(BuildVersionMetadata)" Lines="@(_BuildVersionSourceLine)" Overwrite="true" />
+    <WriteLinesToFile File="$(BuildVersionSource)" Lines="$(_ReleaseVersion)" Overwrite="true" Condition="'$(Configuration)' == 'Release' Or '$(Configuration)' == 'Debug'" />
+  </Target>
+
+  <Target Name="RefreshManifest" BeforeTargets="CreateModPackage">
+    <ItemGroup>
+      <_ManifestLine Include="{" />
+      <_ManifestLine Include="  &quot;name&quot;: &quot;$(AssemblyName)&quot;," />
+      <_ManifestLine Include="  &quot;author&quot;: &quot;GlitchApotamus&quot;," />
+      <_ManifestLine Include="  &quot;version_number&quot;: &quot;$(Version)&quot;," />
+      <_ManifestLine Include="  &quot;website_url&quot;: &quot;https://github.com/GlitchApotamus/POG-POV-Changer.git&quot;," />
+      <_ManifestLine Include="  &quot;description&quot;: &quot;Allows the player to switch between 1st and 3rd person POV&quot;," />
+      <_ManifestLine Include="  &quot;dependencies&quot;: [&quot;MelonLoader-0.7.3&quot;]" />
+      <_ManifestLine Include="}" />
+    </ItemGroup>
+    <WriteLinesToFile File="$(MSBuildProjectDirectory)\manifest.json" Lines="@(_ManifestLine)" Overwrite="true" />
+  </Target>
+
+  <Target Name="CreateModPackage" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug' Or '$(Configuration)' == 'Release'">
+    <PropertyGroup>
+      <_PackageDir>$(IntermediateOutputPath)package\</_PackageDir>
+      <_PackageZip>$(TargetDir)$(AssemblyName)-$(Version).zip</_PackageZip>
+    </PropertyGroup>
+    <RemoveDir Directories="$(_PackageDir)" />
+    <MakeDir Directories="$(_PackageDir);$(_PackageDir)Mods" />
+    <Copy SourceFiles="$(TargetPath);$(MSBuildProjectDirectory)\manifest.json;$(MSBuildProjectDirectory)\README.md;$(MSBuildProjectDirectory)\icon.png" DestinationFiles="$(_PackageDir)Mods\$(TargetFileName);$(_PackageDir)\manifest.json;$(_PackageDir)\README.md;$(_PackageDir)\icon.png" />
+    <ZipDirectory SourceDirectory="$(_PackageDir)" DestinationFile="$(_PackageZip)" Overwrite="true" />
+    <Message Importance="high" Text="Mod package created: $(_PackageZip)" />
+  </Target>
+
+  <Target Name="ValidateMelonLoaderReferences" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="!Exists('$(MelonLoaderDir)\MelonLoader.dll') Or !Exists('$(MelonLoaderDir)\0Harmony.dll') Or !Exists('$(MelonLoaderDir)\Il2CppInterop.Runtime.dll')" Text="MelonLoader references were not found in '$(MelonLoaderDir)'. Install MelonLoader for Pit of Goblin or pass -p:MelonLoaderDir to the net6 folder." />
+  </Target>
+</Project>
