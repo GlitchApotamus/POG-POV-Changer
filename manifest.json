@@ -1,6 +1,6 @@
 {
     "name": "POGPOVChanger",
-    "version_number": "0.0.2",
+    "version_number": "0.0.4",
     "website_url": "https://github.com/GlitchApotamus/POG-POV-Changer.git",
     "description": "Allows the player to switch between 1st and 3rd person POV",
     "dependencies": [
