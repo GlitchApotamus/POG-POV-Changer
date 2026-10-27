@@ -1,6 +1,9 @@
 [general]
 repository = "https://thunderstore.io"
 
+[package]
+namespace = "GlitchApotamus"
+
 [publish]
 communities = ["pit-of-goblin"]
 
