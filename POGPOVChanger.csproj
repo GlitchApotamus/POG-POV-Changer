@@ -99,7 +99,6 @@
     <ItemGroup>
       <_ManifestLine Include="{" />
       <_ManifestLine Include="  &quot;name&quot;: &quot;$(AssemblyName)&quot;," />
-      <_ManifestLine Include="  &quot;author&quot;: &quot;GlitchApotamus&quot;," />
       <_ManifestLine Include="  &quot;version_number&quot;: &quot;$(Version)&quot;," />
       <_ManifestLine Include="  &quot;website_url&quot;: &quot;https://github.com/GlitchApotamus/POG-POV-Changer.git&quot;," />
       <_ManifestLine Include="  &quot;description&quot;: &quot;Allows the player to switch between 1st and 3rd person POV&quot;," />
