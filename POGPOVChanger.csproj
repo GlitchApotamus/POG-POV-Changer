@@ -92,7 +92,6 @@
       <_BuildVersionSourceLine Include="[assembly: MelonInfo(typeof(POGPOVChanger.POGPOVChanger), &quot;POGPOVChanger&quot;, &quot;$(Version)&quot;, &quot;GlitchApotamus&quot;)]" />
     </ItemGroup>
     <WriteLinesToFile File="$(BuildVersionMetadata)" Lines="@(_BuildVersionSourceLine)" Overwrite="true" />
-    <WriteLinesToFile File="$(BuildVersionSource)" Lines="$(_ReleaseVersion)" Overwrite="true" Condition="'$(Configuration)' == 'Release' Or '$(Configuration)' == 'Debug'" />
   </Target>
 
   <Target Name="RefreshManifest" BeforeTargets="CreateModPackage">
