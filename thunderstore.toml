@@ -6,3 +6,6 @@ communities = ["pit-of-goblin"]
 
 [publish.categories]
 pit-of-goblin = [ "mods", "tools" ]
+
+[package]
+namespace = "GlitchApotamus"
