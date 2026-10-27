@@ -28,6 +28,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Clean stale build outputs
+        shell: bash
+        run: |
+          git clean -fdx
+          rm -rf bin obj release-assets
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -95,6 +101,12 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Clean stale publish workspace
+        shell: bash
+        run: |
+          git clean -fdx
+          rm -rf release-assets
 
       - name: Download release asset from GitHub
         env:
