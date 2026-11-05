@@ -5,6 +5,8 @@ using System.Linq;
 using System.Reflection;
 using System.Text.Json;
 using Il2Cpp;
+using Il2CppEntities;
+using Il2CppGame.Interaction;
 using MelonLoader;
 using MelonLoader.Utils;
 using UnityEngine;
@@ -18,6 +20,11 @@ public sealed class POGPOVChanger : MelonMod
     private const string DefaultPresetKey = "F5";
 
     private KeyCode _toggleKey = KeyCode.F5;
+    private PlayerController? _thirdPersonController;
+    private PlayerInteract? _playerInteract;
+    private Transform? _originalInteractionRayOrigin;
+    private float _originalInteractionDistance;
+    private GameObject? _rayProxy;
 
     public override void OnInitializeMelon()
     {
@@ -33,6 +40,28 @@ public sealed class POGPOVChanger : MelonMod
         {
             TogglePov();
         }
+
+        UpdateThirdPersonInteractionRay();
+    }
+
+    public override void OnGUI()
+    {
+        if (_thirdPersonController == null ||
+            _playerInteract == null ||
+            _thirdPersonController.CurrentCameraType != PlayerController.CameraType.ThirdPersonCamera)
+        {
+            return;
+        }
+
+        // Always-on aim dot; it turns green while an interactable is selected.
+        float centerX = Screen.width / 2f;
+        float centerY = Screen.height / 2f;
+        Color previous = GUI.color;
+        GUI.color = new Color(0f, 0f, 0f, 0.8f);
+        GUI.DrawTexture(new Rect(centerX - 3f, centerY - 3f, 6f, 6f), Texture2D.whiteTexture);
+        GUI.color = _playerInteract.m_currentSelectedInteractable != null ? new Color(0.3f, 1f, 0.3f, 1f) : Color.white;
+        GUI.DrawTexture(new Rect(centerX - 2f, centerY - 2f, 4f, 4f), Texture2D.whiteTexture);
+        GUI.color = previous;
     }
 
     private void TogglePov()
@@ -49,15 +78,110 @@ public sealed class POGPOVChanger : MelonMod
             if (controller.CurrentCameraType == PlayerController.CameraType.ThirdPersonCamera)
             {
                 controller.SetFirstPersonCamera();
+                RestoreInteractionRay();
                 return;
             }
 
             controller.ChangeCamera(PlayerController.CameraType.ThirdPersonCamera, controller.CameraRoot);
+            SetThirdPersonInteractionRay(controller);
         }
         catch (Exception ex)
         {
             LoggerInstance.Warning($"Could not switch POV: {ex.Message}");
         }
+    }
+
+    private void SetThirdPersonInteractionRay(PlayerController controller)
+    {
+        EntityPlayer? player = UnityEngine.Object.FindObjectsOfType<EntityPlayer>()
+            .FirstOrDefault(candidate => candidate.m_playerController == controller);
+        PlayerInteract? playerInteract = player?.PlayerInteract;
+        if (playerInteract == null || playerInteract.m_rayOrigin == null)
+        {
+            LoggerInstance.Warning("Could not update the interaction ray for third-person view.");
+            return;
+        }
+
+        RestoreInteractionRay();
+        _thirdPersonController = controller;
+        _playerInteract = playerInteract;
+        _originalInteractionRayOrigin = playerInteract.m_rayOrigin;
+        _originalInteractionDistance = playerInteract.m_distance;
+        UpdateThirdPersonInteractionRay();
+    }
+
+    private void UpdateThirdPersonInteractionRay()
+    {
+        if (_thirdPersonController == null && _playerInteract == null)
+        {
+            return;
+        }
+
+        // The game can leave third person on its own (e.g. ragdoll or death), so undo our changes when that happens.
+        if (_thirdPersonController == null ||
+            _playerInteract == null ||
+            _originalInteractionRayOrigin == null ||
+            _thirdPersonController.CurrentCameraType != PlayerController.CameraType.ThirdPersonCamera)
+        {
+            RestoreInteractionRay();
+            return;
+        }
+
+        Camera? camera = _thirdPersonController.MainCamera;
+        if (camera == null)
+        {
+            return;
+        }
+
+        if (!_playerInteract.m_rayActive)
+        {
+            _playerInteract.ToggleRay(true);
+        }
+
+        // The game's ray origin is the camera, which sits behind the player in third person.
+        // Cast from the first-person head pivot instead, along the camera's view direction.
+        if (_rayProxy == null)
+        {
+            _rayProxy = new GameObject("POGPOVChanger_InteractRay");
+        }
+
+        Transform proxy = _rayProxy.transform;
+        Transform headPivot = _thirdPersonController.CameraRoot;
+        proxy.position = headPivot != null ? headPivot.position : _originalInteractionRayOrigin.position;
+        proxy.rotation = camera.transform.rotation;
+        _playerInteract.m_rayOrigin = proxy;
+    }
+
+    public override void OnLateUpdate()
+    {
+        UpdateThirdPersonInteractionRay();
+    }
+
+    private void RestoreInteractionRay()
+    {
+        if (_playerInteract != null && _originalInteractionRayOrigin != null)
+        {
+            try
+            {
+                _playerInteract.m_rayOrigin = _originalInteractionRayOrigin;
+                _playerInteract.m_distance = _originalInteractionDistance;
+            }
+            catch (Exception ex)
+            {
+                LoggerInstance.Warning($"Could not restore the interaction ray: {ex.Message}");
+            }
+        }
+
+        if (_rayProxy != null)
+        {
+            UnityEngine.Object.Destroy(_rayProxy);
+            _rayProxy = null;
+        }
+
+        _thirdPersonController = null;
+        _playerInteract = null;
+        _originalInteractionRayOrigin = null;
+        _originalInteractionDistance = 0f;
     }
 
     private static PlayerController? GetLocalPlayerController()
