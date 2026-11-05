@@ -12,29 +12,30 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
-    <GameDir Condition="'$(GameDir)' == ''">$(PIT_OF_GOBLINS_GAME_DIR)</GameDir>
-    <MelonLoaderDir Condition="'$(MelonLoaderDir)' == '' and Exists('$(APPDATA)\com.kesomannen.gale\pit-of-goblin\profiles\Default\MelonLoader\net6\MelonLoader.dll')">$(APPDATA)\com.kesomannen.gale\pit-of-goblin\profiles\Default\MelonLoader\net6</MelonLoaderDir>
-    <MelonLoaderDir Condition="'$(MelonLoaderDir)' == '' and '$(GameDir)' != ''">$(GameDir)\MelonLoader\net6</MelonLoaderDir>
-    <GameAssembliesDir Condition="'$(GameAssembliesDir)' == ''">$(MelonLoaderDir)\..\Il2CppAssemblies</GameAssembliesDir>
-    <POGConfigDir Condition="'$(POGConfigDir)' == ''">$(APPDATA)\com.kesomannen.gale\cache\Largo-POG_Config\1.0.10\Mods</POGConfigDir>
-    <UseBuildStubs Condition="'$(CI)' == 'true' or '$(MelonLoaderDir)' == '' or !Exists('$(MelonLoaderDir)\MelonLoader.dll') or !Exists('$(GameAssembliesDir)\Assembly-CSharp.dll')">true</UseBuildStubs>
+    <GameDir Condition="'$(GameDir)' == ''">C:\Program Files (x86)\Steam\steamapps\common\Pit of Goblin</GameDir>
+    <MelonLoaderDir Condition="'$(MelonLoaderDir)' == ''">$(GameDir)\MelonLoader</MelonLoaderDir>
+    <MelonLoaderRuntimeDir Condition="'$(MelonLoaderRuntimeDir)' == '' and Exists('$(MelonLoaderDir)\MelonLoader.dll')">$(MelonLoaderDir)</MelonLoaderRuntimeDir>
+    <MelonLoaderRuntimeDir Condition="'$(MelonLoaderRuntimeDir)' == ''">$(MelonLoaderDir)\net6</MelonLoaderRuntimeDir>
+    <ModsDir Condition="'$(ModsDir)' == ''">$(GameDir)\Mods</ModsDir>
+    <GameAssembliesDir Condition="'$(GameAssembliesDir)' == ''">$(MelonLoaderDir)\Il2CppAssemblies</GameAssembliesDir>
+    <UseBuildStubs Condition="'$(CI)' == 'true' or '$(MelonLoaderRuntimeDir)' == '' or !Exists('$(MelonLoaderRuntimeDir)\MelonLoader.dll') or !Exists('$(GameAssembliesDir)\Assembly-CSharp.dll')">true</UseBuildStubs>
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="MelonLoader" Condition="'$(UseBuildStubs)' != 'true' and Exists('$(MelonLoaderDir)\MelonLoader.dll')">
-      <HintPath>$(MelonLoaderDir)\MelonLoader.dll</HintPath>
+    <Reference Include="MelonLoader" Condition="'$(UseBuildStubs)' != 'true' and Exists('$(MelonLoaderRuntimeDir)\MelonLoader.dll')">
+      <HintPath>$(MelonLoaderRuntimeDir)\MelonLoader.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="0Harmony" Condition="'$(UseBuildStubs)' != 'true' and Exists('$(MelonLoaderDir)\0Harmony.dll')">
-      <HintPath>$(MelonLoaderDir)\0Harmony.dll</HintPath>
+    <Reference Include="0Harmony" Condition="'$(UseBuildStubs)' != 'true' and Exists('$(MelonLoaderRuntimeDir)\0Harmony.dll')">
+      <HintPath>$(MelonLoaderRuntimeDir)\0Harmony.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="Il2CppInterop.Runtime" Condition="'$(UseBuildStubs)' != 'true' and Exists('$(MelonLoaderDir)\Il2CppInterop.Runtime.dll')">
-      <HintPath>$(MelonLoaderDir)\Il2CppInterop.Runtime.dll</HintPath>
+    <Reference Include="Il2CppInterop.Runtime" Condition="'$(UseBuildStubs)' != 'true' and Exists('$(MelonLoaderRuntimeDir)\Il2CppInterop.Runtime.dll')">
+      <HintPath>$(MelonLoaderRuntimeDir)\Il2CppInterop.Runtime.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="POGConfig" Condition="'$(UseBuildStubs)' != 'true' and Exists('$(POGConfigDir)\POGConfig.dll')">
-      <HintPath>$(POGConfigDir)\POGConfig.dll</HintPath>
+    <Reference Include="POGConfig" Condition="'$(UseBuildStubs)' != 'true' and Exists('$(ModsDir)\POGConfig.dll')">
+      <HintPath>$(ModsDir)\POGConfig.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Assembly-CSharp" Condition="'$(UseBuildStubs)' != 'true' and Exists('$(GameAssembliesDir)\Assembly-CSharp.dll')">
@@ -57,12 +58,17 @@
       <HintPath>$(GameAssembliesDir)\UnityEngine.InputLegacyModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="UnityEngine.IMGUIModule" Condition="'$(UseBuildStubs)' != 'true' and Exists('$(GameAssembliesDir)\UnityEngine.IMGUIModule.dll')">
+      <HintPath>$(GameAssembliesDir)\UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>
     <Compile Include="$(BuildVersionMetadata)" />
     <Compile Remove="BuildStubs\**\*.cs" />
     <Compile Include="BuildStubs\ModStubs.cs" Condition="'$(UseBuildStubs)' == 'true'" />
+    <Compile Remove="BuildCompat\NullableAttributes.cs" Condition="'$(UseBuildStubs)' == 'true'" />
   </ItemGroup>
 
   <Target Name="ApplyModVersion" BeforeTargets="PrepareForBuild" Condition="'$(DesignTimeBuild)' != 'true'">
@@ -120,6 +126,6 @@
   </Target>
 
   <Target Name="ValidateMelonLoaderReferences" BeforeTargets="ResolveAssemblyReferences" Condition="'$(UseBuildStubs)' != 'true'">
-    <Error Condition="!Exists('$(MelonLoaderDir)\MelonLoader.dll') Or !Exists('$(MelonLoaderDir)\0Harmony.dll') Or !Exists('$(MelonLoaderDir)\Il2CppInterop.Runtime.dll')" Text="MelonLoader references were not found in '$(MelonLoaderDir)'. Install MelonLoader for Pit of Goblin or pass -p:MelonLoaderDir to the net6 folder." />
+    <Error Condition="!Exists('$(MelonLoaderRuntimeDir)\MelonLoader.dll') Or !Exists('$(MelonLoaderRuntimeDir)\0Harmony.dll') Or !Exists('$(MelonLoaderRuntimeDir)\Il2CppInterop.Runtime.dll')" Text="MelonLoader references were not found in '$(MelonLoaderRuntimeDir)'. Install MelonLoader for Pit of Goblin or pass -p:MelonLoaderDir to the MelonLoader root or net6 folder." />
   </Target>
 </Project>
