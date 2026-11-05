@@ -11,7 +11,13 @@ The mod defaults to the F5 key. If POG Config is installed, a custom POV toggle 
 - Project: POG-POV-Changer
 - Author: GlitchApotamus
 
-## WARNING
+## Third person
 
-Use this mod at your own risk! There are no animations and you can't interact with anything while in 3rd person! You can change back to 1st person to get everything working again.
-Everything will be fixed after version 1.0 POG!
+- Interact with items, levers and other objects (E by default) while in third person. A small aim dot is shown in the centre of the screen and turns green when something can be interacted with.
+- Your held weapon swings while attacking, but your arms don't animate yet in third person.
+- If the game forces you back to first person (for example when you are knocked down), interaction returns to normal.
+
+## Requirements
+
+- MelonLoader 0.7.3
+- POG Config 1.0.10
