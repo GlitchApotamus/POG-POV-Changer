@@ -42,8 +42,40 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore
 
+      # A working IL2CPP mod MUST be compiled against the game's generated
+      # MelonLoader/Il2CppAssemblies (Assembly-CSharp.dll et al.). Those are produced
+      # locally by MelonLoader from the installed game and are version-specific, so they
+      # are not committed to this repo. Provide them to CI by setting the repository
+      # secret GAME_ASSEMBLIES_URL to a direct-download archive whose top level is a
+      # "Pit of Goblin" game dir containing MelonLoader/ (with net6/ and Il2CppAssemblies/)
+      # and Mods/POGConfig.dll. Without this secret the build falls back to a STUB
+      # compile-check that produces no package, and the release will stop at the
+      # "Find generated mod zip" step by design (a stub DLL does not load in-game).
+      - name: Restore game assemblies (optional)
+        id: gameasm
+        if: ${{ secrets.GAME_ASSEMBLIES_URL != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci-game
+          curl -fsSL "${{ secrets.GAME_ASSEMBLIES_URL }}" -o game-assemblies.zip
+          unzip -q game-assemblies.zip -d ci-game
+          game_dir=$(find ci-game -type d -name Il2CppAssemblies -printf '%h\n' | head -n1 | xargs -r dirname)
+          if [ -z "$game_dir" ]; then
+            echo "Archive did not contain MelonLoader/Il2CppAssemblies; check GAME_ASSEMBLIES_URL layout." >&2
+            exit 1
+          fi
+          echo "game_dir=$(cd "$game_dir" && pwd)" >> "$GITHUB_OUTPUT"
+
       - name: Build release package
-        run: dotnet build -c Release --no-restore --nologo
+        shell: bash
+        run: |
+          if [ -n "${{ steps.gameasm.outputs.game_dir }}" ]; then
+            dotnet build -c Release --no-restore --nologo -p:GameDir="${{ steps.gameasm.outputs.game_dir }}"
+          else
+            echo "::warning::No GAME_ASSEMBLIES_URL secret set - building a STUB compile-check only; no shippable package will be produced."
+            dotnet build -c Release --no-restore --nologo
+          fi
 
       - name: Find generated mod zip
         id: artifact
@@ -51,7 +83,10 @@ jobs:
         run: |
           zip_path=$(find ./bin/Release -name "POGPOVChanger-*.zip" | head -n 1)
           if [ -z "$zip_path" ]; then
-            echo "No release zip was produced by the build."
+            echo "No release zip was produced by the build." >&2
+            echo "This means the build fell back to STUB mode (game assemblies were not available)." >&2
+            echo "A stub-built DLL does not load in-game, so it is intentionally NOT published." >&2
+            echo "Set the GAME_ASSEMBLIES_URL repository secret (see the 'Restore game assemblies' step) to build a real release in CI, or build and publish locally (see README: Building a release)." >&2
             exit 1
           fi
           echo "zip_path=$zip_path" >> "$GITHUB_OUTPUT"
