@@ -20,11 +20,11 @@ public sealed class POGPOVChanger : MelonMod
     private const string DefaultPresetKey = "F5";
 
     private KeyCode _toggleKey = KeyCode.F5;
-    private PlayerController? _thirdPersonController;
-    private PlayerInteract? _playerInteract;
-    private Transform? _originalInteractionRayOrigin;
+    private PlayerController _thirdPersonController;
+    private PlayerInteract _playerInteract;
+    private Transform _originalInteractionRayOrigin;
     private float _originalInteractionDistance;
-    private GameObject? _rayProxy;
+    private GameObject _rayProxy;
 
     public override void OnInitializeMelon()
     {
@@ -66,7 +66,7 @@ public sealed class POGPOVChanger : MelonMod
 
     private void TogglePov()
     {
-        PlayerController? controller = GetLocalPlayerController();
+        PlayerController controller = GetLocalPlayerController();
         if (controller == null)
         {
             LoggerInstance.Warning("No local PlayerController was found for POV switching.");
@@ -93,9 +93,9 @@ public sealed class POGPOVChanger : MelonMod
 
     private void SetThirdPersonInteractionRay(PlayerController controller)
     {
-        EntityPlayer? player = UnityEngine.Object.FindObjectsOfType<EntityPlayer>()
+        EntityPlayer player = UnityEngine.Object.FindObjectsOfType<EntityPlayer>()
             .FirstOrDefault(candidate => candidate.m_playerController == controller);
-        PlayerInteract? playerInteract = player?.PlayerInteract;
+        PlayerInteract playerInteract = player?.PlayerInteract;
         if (playerInteract == null || playerInteract.m_rayOrigin == null)
         {
             LoggerInstance.Warning("Could not update the interaction ray for third-person view.");
@@ -127,7 +127,7 @@ public sealed class POGPOVChanger : MelonMod
             return;
         }
 
-        Camera? camera = _thirdPersonController.MainCamera;
+        Camera camera = _thirdPersonController.MainCamera;
         if (camera == null)
         {
             return;
@@ -184,7 +184,7 @@ public sealed class POGPOVChanger : MelonMod
         _originalInteractionDistance = 0f;
     }
 
-    private static PlayerController? GetLocalPlayerController()
+    private static PlayerController GetLocalPlayerController()
     {
         PlayerController[] players = UnityEngine.Object.FindObjectsOfType<PlayerController>();
         return players.Length == 0 ? null : players[0];
@@ -194,7 +194,7 @@ public sealed class POGPOVChanger : MelonMod
     {
         try
         {
-            Type? configType = AppDomain.CurrentDomain.GetAssemblies()
+            Type configType = AppDomain.CurrentDomain.GetAssemblies()
                 .SelectMany(assembly => assembly.GetTypes())
                 .FirstOrDefault(type => type.FullName == "POGMods.Config.POGConfig" || type.Name == "POGConfig");
             if (configType == null)
@@ -203,7 +203,7 @@ public sealed class POGPOVChanger : MelonMod
                 return;
             }
 
-            MethodInfo? registerMethod = configType.GetMethods(BindingFlags.Public | BindingFlags.Static)
+            MethodInfo registerMethod = configType.GetMethods(BindingFlags.Public | BindingFlags.Static)
                 .FirstOrDefault(method => method.Name == "Register" && method.GetParameters().Length == 2);
             if (registerMethod == null)
             {
@@ -211,10 +211,10 @@ public sealed class POGPOVChanger : MelonMod
                 return;
             }
 
-            Type? configEntryType = AppDomain.CurrentDomain.GetAssemblies()
+            Type configEntryType = AppDomain.CurrentDomain.GetAssemblies()
                 .SelectMany(assembly => assembly.GetTypes())
                 .FirstOrDefault(type => type.FullName == "POGMods.Config.ConfigEntry" || type.Name == "ConfigEntry");
-            Type? keyEntryType = AppDomain.CurrentDomain.GetAssemblies()
+            Type keyEntryType = AppDomain.CurrentDomain.GetAssemblies()
                 .SelectMany(assembly => assembly.GetTypes())
                 .FirstOrDefault(type => type.FullName == "POGMods.Config.KeyEntry" || type.Name == "KeyEntry");
             if (configEntryType == null || keyEntryType == null)
@@ -230,7 +230,7 @@ public sealed class POGPOVChanger : MelonMod
                 SaveConfiguredKey();
             };
 
-            ConstructorInfo? entryConstructor = keyEntryType.GetConstructors()
+            ConstructorInfo entryConstructor = keyEntryType.GetConstructors()
                 .FirstOrDefault(constructor =>
                     constructor.GetParameters().Length >= 3 &&
                     constructor.GetParameters()[0].ParameterType == typeof(string) &&
@@ -314,7 +314,7 @@ public sealed class POGPOVChanger : MelonMod
         }
     }
 
-    private static KeyCode ParseKeyCode(string? value)
+    private static KeyCode ParseKeyCode(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
         {
