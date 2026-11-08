@@ -32,8 +32,20 @@ specific to each game version, so they are not part of this repo.
 Build a working release locally by pointing the build at your game folder:
 
 ```bash
-dotnet build -c Release -p:GameDir="C:\Path\To\Steam\steamapps\common\Pit of Goblin"
+dotnet build -c Release \
+  -p:GameDir="C:\Path\To\Steam\steamapps\common\Pit of Goblin" \
+  -p:MelonLoaderDir="C:\Path\To\Steam\steamapps\common\Pit of Goblin\MelonLoader" \
+  -p:ModsDir="C:\Path\To\Steam\steamapps\common\Pit of Goblin\Mods"
 # the packaged zip is written to bin/Release/net6.0/POGPOVChanger-<version>.zip
+```
+
+If you are building on Linux/Proton, pass the real paths instead:
+
+```bash
+dotnet build -c Release \
+  -p:GameDir="$HOME/.steam/steam/steamapps/common/Pit of Goblin" \
+  -p:MelonLoaderDir="$HOME/.steam/steam/steamapps/common/Pit of Goblin/MelonLoader" \
+  -p:ModsDir="$HOME/.steam/steam/steamapps/common/Pit of Goblin/Mods"
 ```
 
 `-p:GameDir` is only needed if the game is not at the default Steam path. On Linux/Proton,
