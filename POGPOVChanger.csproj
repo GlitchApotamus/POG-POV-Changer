@@ -109,6 +109,10 @@
     <WriteLinesToFile File="$(MSBuildProjectDirectory)\manifest.json" Lines="@(_ManifestLine)" Overwrite="true" />
   </Target>
 
+  <Target Name="RefreshChangelog" BeforeTargets="CreateModPackage">
+    <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\tools\GenerateChangelog.ps1&quot; -ProjectRoot &quot;$(MSBuildProjectDirectory)&quot;" />
+  </Target>
+
   <Target Name="CreateModPackage" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug' Or '$(Configuration)' == 'Release'">
     <PropertyGroup>
       <_PackageDir>$(IntermediateOutputPath)package\</_PackageDir>
@@ -116,7 +120,7 @@
     </PropertyGroup>
     <RemoveDir Directories="$(_PackageDir)" />
     <MakeDir Directories="$(_PackageDir);$(_PackageDir)Mods" />
-    <Copy SourceFiles="$(TargetPath);$(MSBuildProjectDirectory)\manifest.json;$(MSBuildProjectDirectory)\README.md;$(MSBuildProjectDirectory)\icon.png" DestinationFiles="$(_PackageDir)Mods\$(TargetFileName);$(_PackageDir)\manifest.json;$(_PackageDir)\README.md;$(_PackageDir)\icon.png" />
+    <Copy SourceFiles="$(TargetPath);$(MSBuildProjectDirectory)\manifest.json;$(MSBuildProjectDirectory)\README.md;$(MSBuildProjectDirectory)\CHANGELOG.md;$(MSBuildProjectDirectory)\icon.png" DestinationFiles="$(_PackageDir)Mods\$(TargetFileName);$(_PackageDir)\manifest.json;$(_PackageDir)\README.md;$(_PackageDir)\CHANGELOG.md;$(_PackageDir)\icon.png" />
     <ZipDirectory SourceDirectory="$(_PackageDir)" DestinationFile="$(_PackageZip)" Overwrite="true" />
     <Message Importance="high" Text="Mod package created: $(_PackageZip)" />
   </Target>
