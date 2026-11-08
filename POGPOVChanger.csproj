@@ -18,7 +18,15 @@
     <MelonLoaderRuntimeDir Condition="'$(MelonLoaderRuntimeDir)' == ''">$(MelonLoaderDir)\net6</MelonLoaderRuntimeDir>
     <ModsDir Condition="'$(ModsDir)' == ''">$(GameDir)\Mods</ModsDir>
     <GameAssembliesDir Condition="'$(GameAssembliesDir)' == ''">$(MelonLoaderDir)\Il2CppAssemblies</GameAssembliesDir>
-    <UseBuildStubs Condition="'$(CI)' == 'true' or '$(MelonLoaderRuntimeDir)' == '' or !Exists('$(MelonLoaderRuntimeDir)\MelonLoader.dll') or !Exists('$(GameAssembliesDir)\Assembly-CSharp.dll')">true</UseBuildStubs>
+    <!--
+      Build stubs (BuildStubs/ModStubs.cs) exist ONLY so the project can be compile-checked
+      without the game installed. A stub build is NOT shippable: its POGPOVChanger class derives
+      from a stub MelonLoader.MelonMod compiled into the DLL, so MelonLoader finds no real MelonMod
+      and never loads the mod (no banner, F5 does nothing). Therefore stubs are used purely based on
+      whether the real game/MelonLoader assemblies are present - NEVER because we are on CI. Tying
+      this to $(CI) made every CI release a non-functional stub build. See README: Building a release.
+    -->
+    <UseBuildStubs Condition="'$(MelonLoaderRuntimeDir)' == '' or !Exists('$(MelonLoaderRuntimeDir)\MelonLoader.dll') or !Exists('$(GameAssembliesDir)\Assembly-CSharp.dll')">true</UseBuildStubs>
   </PropertyGroup>
 
   <ItemGroup>
@@ -113,7 +121,11 @@
     <WriteLinesToFile File="$(MSBuildProjectDirectory)\manifest.json" Lines="@(_ManifestLine)" Overwrite="true" />
   </Target>
 
-  <Target Name="CreateModPackage" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug' Or '$(Configuration)' == 'Release'">
+  <Target Name="WarnStubBuildNotPackaged" AfterTargets="Build" Condition="'$(UseBuildStubs)' == 'true'">
+    <Message Importance="high" Text="POGPOVChanger: STUB build detected (game/MelonLoader assemblies not found at '$(GameAssembliesDir)'). This is a COMPILE-CHECK ONLY - no mod package was produced, because a stub-built DLL subclasses stub MelonLoader types and will not load in-game. To build a working release, point the build at the game's generated assemblies, e.g.: dotnet build -c Release -p:GameDir=&quot;C:\Path\To\Pit of Goblin&quot;. See README: Building a release." />
+  </Target>
+
+  <Target Name="CreateModPackage" AfterTargets="Build" Condition="('$(Configuration)' == 'Debug' Or '$(Configuration)' == 'Release') And '$(UseBuildStubs)' != 'true'">
     <PropertyGroup>
       <_PackageDir>$(IntermediateOutputPath)package\</_PackageDir>
       <_PackageZip>$(TargetDir)$(AssemblyName)-$(Version).zip</_PackageZip>
