@@ -66,7 +66,6 @@ function Get-ReleaseSection {
 
 $projectRoot = (Resolve-Path $ProjectRoot).Path
 $version = (Get-Content (Join-Path $projectRoot "VERSION") -Raw).Trim()
-$readmePath = Join-Path $projectRoot "README.md"
 $changelogPath = Join-Path $projectRoot "CHANGELOG.md"
 
 Push-Location $projectRoot
@@ -126,17 +125,4 @@ if (Test-Path $changelogPath) {
 
     $updated = ($header + $section) -join [Environment]::NewLine
     [System.IO.File]::WriteAllText($changelogPath, $updated + [Environment]::NewLine)
-}
-
-if (Test-Path $readmePath) {
-    $readme = [System.IO.File]::ReadAllText($readmePath)
-    $placeholder = "<!-- BEGIN AUTO-CHANGELOG -->`r`n$section`r`n<!-- END AUTO-CHANGELOG -->"
-    $pattern = '(?s)<!-- BEGIN AUTO-CHANGELOG -->.*?<!-- END AUTO-CHANGELOG -->'
-    if ($readme -match $pattern) {
-        $readme = [regex]::Replace($readme, $pattern, $placeholder)
-    } else {
-        $readme = $readme.TrimEnd() + [Environment]::NewLine + [Environment]::NewLine + $placeholder + [Environment]::NewLine
-    }
-
-    [System.IO.File]::WriteAllText($readmePath, $readme)
 }
