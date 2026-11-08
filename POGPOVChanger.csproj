@@ -121,6 +121,20 @@
     <Message Importance="high" Text="Mod package created: $(_PackageZip)" />
   </Target>
 
+  <Target Name="UploadReleaseZipToGitHub" AfterTargets="CreateModPackage" Condition="'$(Configuration)' == 'Release' And '$(AutoUploadGitHubRelease)' == 'true'">
+    <PropertyGroup>
+      <_GitHubReleaseTag Condition="'$(GitHubReleaseTag)' != ''">$(GitHubReleaseTag)</_GitHubReleaseTag>
+      <_GitHubReleaseTag Condition="'$(GitHubReleaseTag)' == ''">v$(Version)</_GitHubReleaseTag>
+      <_GitHubRepo Condition="'$(GitHubRepo)' != ''">$(GitHubRepo)</_GitHubRepo>
+      <_GitHubRepo Condition="'$(GitHubRepo)' == '' and '$(GITHUB_REPOSITORY)' != ''">$(GITHUB_REPOSITORY)</_GitHubRepo>
+      <_GitHubRepo Condition="'$(GitHubRepo)' == '' and '$(GITHUB_REPOSITORY)' == ''">GlitchApotamus/POG-POV-Changer</_GitHubRepo>
+      <_PackageZip>$(TargetDir)$(AssemblyName)-$(Version).zip</_PackageZip>
+    </PropertyGroup>
+    <Exec Command="gh release view &quot;$(_GitHubReleaseTag)&quot; --repo &quot;$(_GitHubRepo)&quot; &gt;NUL 2&gt;NUL || gh release create &quot;$(_GitHubReleaseTag)&quot; --repo &quot;$(_GitHubRepo)&quot; --generate-notes --title &quot;$(_GitHubReleaseTag)&quot;" />
+    <Exec Command="gh release upload &quot;$(_GitHubReleaseTag)&quot; &quot;$(_PackageZip)&quot; --repo &quot;$(_GitHubRepo)&quot; --clobber" />
+    <Message Importance="high" Text="Uploaded release zip to GitHub: $(_PackageZip) as $(_GitHubReleaseTag)" />
+  </Target>
+
   <Target Name="ValidateMelonLoaderReferences" BeforeTargets="ResolveAssemblyReferences">
     <Error Condition="!Exists('$(MelonLoaderRuntimeDir)\MelonLoader.dll') Or !Exists('$(MelonLoaderRuntimeDir)\0Harmony.dll') Or !Exists('$(MelonLoaderRuntimeDir)\Il2CppInterop.Runtime.dll')" Text="MelonLoader references were not found in '$(MelonLoaderRuntimeDir)'. Install MelonLoader for Pit of Goblin or pass -p:MelonLoaderDir to the MelonLoader root or net6 folder." />
   </Target>
