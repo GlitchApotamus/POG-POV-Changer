@@ -263,7 +263,7 @@ public sealed class POGPOVChanger : MelonMod
 
     private void LoadConfiguredKey()
     {
-        string configPath = Path.Combine(MelonEnvironment.UserDataDirectory, ModConfigDirectory, ConfigFileName);
+        string configPath = Path.Combine(MelonEnvironment.UserDataDirectory, "ModManager", ModConfigDirectory, ConfigFileName);
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(configPath)!);
