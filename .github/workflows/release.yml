@@ -1,134 +1,12 @@
-name: Release Mod Package
+name: Publish to Thunderstore
 
 on:
+  release:
+    types: [published]
   workflow_dispatch:
-    inputs:
-      tag_name:
-        description: Git tag to attach the release to
-        required: false
-        default: ""
-  push:
-    branches:
-      - main
-    tags:
-      - "v*"
-      - "*.*.*"
 
 jobs:
-  build-and-release:
-    name: Build and publish GitHub release
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    outputs:
-      tag_name: ${{ steps.release_tag.outputs.tag }}
-      zip_name: ${{ steps.artifact.outputs.file_name }}
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Clean stale build outputs
-        shell: bash
-        run: |
-          git clean -fdx
-          rm -rf bin obj release-assets
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 6.0.x
-
-      - name: Restore dependencies
-        run: dotnet restore
-
-      # A working IL2CPP mod MUST be compiled against the game's generated
-      # MelonLoader/Il2CppAssemblies (Assembly-CSharp.dll et al.). Those are produced
-      # locally by MelonLoader from the installed game and are version-specific, so they
-      # are not committed to this repo. Provide them to CI by setting the repository
-      # secret GAME_ASSEMBLIES_URL to a direct-download archive whose top level is a
-      # "Pit of Goblin" game dir containing MelonLoader/ (with net6/ and Il2CppAssemblies/)
-      # and Mods/POGConfig.dll. Without this secret the build falls back to a STUB
-      # compile-check that produces no package, and the release will stop at the
-      # "Find generated mod zip" step by design (a stub DLL does not load in-game).
-      - name: Restore game assemblies (optional)
-        id: gameasm
-        if: ${{ secrets.GAME_ASSEMBLIES_URL != '' }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p ci-game
-          curl -fsSL "${{ secrets.GAME_ASSEMBLIES_URL }}" -o game-assemblies.zip
-          unzip -q game-assemblies.zip -d ci-game
-          game_dir=$(find ci-game -type d -name Il2CppAssemblies -printf '%h\n' | head -n1 | xargs -r dirname)
-          if [ -z "$game_dir" ]; then
-            echo "Archive did not contain MelonLoader/Il2CppAssemblies; check GAME_ASSEMBLIES_URL layout." >&2
-            exit 1
-          fi
-          echo "game_dir=$(cd "$game_dir" && pwd)" >> "$GITHUB_OUTPUT"
-
-      - name: Build release package
-        shell: bash
-        run: |
-          if [ -n "${{ steps.gameasm.outputs.game_dir }}" ]; then
-            dotnet build -c Release --no-restore --nologo -p:GameDir="${{ steps.gameasm.outputs.game_dir }}"
-          else
-            echo "::warning::No GAME_ASSEMBLIES_URL secret set - building a STUB compile-check only; no shippable package will be produced."
-            dotnet build -c Release --no-restore --nologo
-          fi
-
-      - name: Find generated mod zip
-        id: artifact
-        shell: bash
-        run: |
-          zip_path=$(find ./bin/Release -name "POGPOVChanger-*.zip" | head -n 1)
-          if [ -z "$zip_path" ]; then
-            echo "No release zip was produced by the build." >&2
-            echo "This means the build fell back to STUB mode (game assemblies were not available)." >&2
-            echo "A stub-built DLL does not load in-game, so it is intentionally NOT published." >&2
-            echo "Set the GAME_ASSEMBLIES_URL repository secret (see the 'Restore game assemblies' step) to build a real release in CI, or build and publish locally (see README: Building a release)." >&2
-            exit 1
-          fi
-          echo "zip_path=$zip_path" >> "$GITHUB_OUTPUT"
-          echo "file_name=$(basename "$zip_path")" >> "$GITHUB_OUTPUT"
-
-      - name: Resolve release tag
-        id: release_tag
-        shell: bash
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.tag_name }}" ]; then
-            echo "tag=${{ github.event.inputs.tag_name }}" >> "$GITHUB_OUTPUT"
-          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "tag=release-${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
-          elif [ "${{ github.ref_type }}" = "tag" ]; then
-            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
-          else
-            version=$(cat VERSION)
-            echo "tag=v${version}" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Create tag if needed
-        if: ${{ github.ref_type != 'tag' }}
-        shell: bash
-        run: |
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          tag="${{ steps.release_tag.outputs.tag }}"
-          if ! git rev-parse "$tag" >/dev/null 2>&1; then
-            git tag "$tag"
-            git push origin "$tag"
-          fi
-
-      - name: Publish GitHub release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.release_tag.outputs.tag }}
-          files: ${{ steps.artifact.outputs.zip_path }}
-          generate_release_notes: true
-
-  thunderstore-publish:
-    name: Publish zip from GitHub release to Thunderstore
-    needs: build-and-release
+  thunderstore:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -137,21 +15,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Clean stale publish workspace
-        shell: bash
-        run: |
-          git clean -fdx
-          rm -rf release-assets
-
-      - name: Download release asset from GitHub
+      - name: Download release asset
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
           mkdir -p release-assets
-          gh release download "${{ needs.build-and-release.outputs.tag_name }}" \
+          tag="${GITHUB_REF_NAME:-${{ github.event.release.tag_name }}}"
+          gh release download "$tag" \
             --repo "${{ github.repository }}" \
-            --pattern "${{ needs.build-and-release.outputs.zip_name }}" \
+            --pattern "POGPOVChanger-*.zip" \
             --dir release-assets
 
       - name: Install Thunderstore CLI
@@ -165,4 +38,10 @@ jobs:
           TCLI_AUTH_TOKEN: ${{ secrets.TCLI_AUTH_TOKEN }}
         shell: bash
         run: |
-          tcli publish --config-path ./thunderstore.toml --token "$TCLI_AUTH_TOKEN" --file "release-assets/${{ needs.build-and-release.outputs.zip_name }}"
+          zip_file=$(find release-assets -name "POGPOVChanger-*.zip" | head -n 1)
+          tcli publish --config-path ./thunderstore.toml --token "$TCLI_AUTH_TOKEN" --file "$zip_file"
+          if [ $? -ne 0 ]; then
+            echo "Failed to publish to Thunderstore"
+            exit 1
+          fi
+          echo "Successfully published to Thunderstore"
